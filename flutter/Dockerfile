@@ -1,5 +1,8 @@
 FROM cirrusci/flutter:base
 
+# root user is needed by drone
+USER root
+
 ENV FLUTTER_HOME ${HOME}/sdks/flutter
 ENV FLUTTER_VERSION 1.0.0
 
