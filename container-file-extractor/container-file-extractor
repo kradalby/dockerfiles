@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+# This script is originally written by Romain Manni-Bucau
+# https://rmannibucau.metawerx.net/post/docker-extracts-fileystem-with-bash
+
+# 1.
+image="$1"
+version="$2"
+folder_filter="$3"
+
+# 2.
+work_dir="$(pwd)"
+target_dir="$work_dir/output"
+
+# 3.
+cd "$work_dir" || exit
+
+# 4. get an API token
+echo "Getting an API token"
+token=$(curl --silent --header 'GET' "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$image:pull" | jq -r '.token')
+
+# 5. download manifest to get layers
+echo "Retrieving $image:$version layers list"
+layers=$(curl --silent --request 'GET' --header "Authorization: Bearer $token" "https://registry-1.docker.io/v2/$image/manifests/$version" | jq -r '.fsLayers | reverse | .[].blobSum' | uniq)
+
+# 6. download and extract each layer
+mkdir -p "layers/gz"
+mkdir -p "layers/tar"
+for layer in $layers; do
+    name="${layer/*:/}"
+    out="layers/gz/$name.gz"
+    echo "Downloading layer $name"
+    curl --silent --location --request 'GET' --header "Authorization: Bearer $token" "https://registry-1.docker.io/v2/$image/blobs/$layer" >"$out"
+    gunzip -c "$out" >"layers/tar/$name"
+    rm "$out"
+done
+
+# 7. for each layer extract the actual files in the target directory
+mkdir -p "$target_dir"
+for layer in $layers; do
+    name="${layer/*:/}"
+    if tar -tf "layers/tar/$name" "$folder_filter" >/dev/null 2>&1; then
+        echo "Extracting layers/tar/$name"
+        tar -xf "layers/tar/$name" -C "$target_dir" "$folder_filter"
+    else
+        echo "No $folder_filter in $name, skipping"
+    fi
+done
+rm -rf "layers"
+echo "Created $target_dir"
