@@ -1,4 +1,4 @@
-FROM nextcloud:17
+FROM nextcloud:21
 
 RUN chsh -s /bin/bash www-data
 USER www-data
