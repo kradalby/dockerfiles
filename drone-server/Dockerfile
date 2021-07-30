@@ -13,10 +13,10 @@ RUN git clone https://github.com/drone/drone \
     && git checkout $DRONE_VERSION \
     && go build -tags "nolimit" ./cmd/drone-server
 
-FROM alpine:3.11 as alpine
+FROM alpine:3.14 as alpine
 RUN apk add -U --no-cache ca-certificates
 
-FROM alpine:3.11
+FROM alpine:3.14
 EXPOSE 80 443
 VOLUME /data
 
