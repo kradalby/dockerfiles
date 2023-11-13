@@ -1,4 +1,4 @@
-FROM swift:5.6-bionic
+FROM swift:5.8-bionic
 
 RUN sed -i 's/bionic/groovy/g' /etc/apt/sources.list
 RUN apt-get update \
